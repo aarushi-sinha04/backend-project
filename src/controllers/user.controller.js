@@ -16,7 +16,6 @@ const registerUser = asyncHandler(async (req, res) => {
     // return res
 
     const {username, email, fullname, password}= req.body
-    console.log(username, email, password)
 
     if(
         [fullname, username, password, email].some((field) => field?.trim() === "")
@@ -24,7 +23,7 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{ username }, { email }]
     })
 
@@ -32,8 +31,8 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User already exists")
     }
 
-    const avatarLocalPath = req.files?.avatar[0]?.paths;
-    const coverImageLocalPath = req.files?.coverImage[0]?.paths;
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+    const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
     if(!avatarLocalPath){
         throw new ApiError(400, "Avatar is required")
@@ -50,9 +49,10 @@ const registerUser = asyncHandler(async (req, res) => {
         fullname, 
         avatar: avatar.url,
         coverImage: coverImage?.url || "",
+        password,
         username: username.toLowerCase(),
-        email,
-        password
+        email
+        
     })
 
     const createdUser = await User.findById(user._id).select(
@@ -60,11 +60,11 @@ const registerUser = asyncHandler(async (req, res) => {
     )
 
     if(!createdUser){
-        throw new ApiError(500, "Something went wrong whilw registering user")
+        throw new ApiError(500, "Something went wrong while registering user")
     }
 
     return res.status(201).json(
-       new ApiResponse(200, createdUser), "user registered successfully"
+       new ApiResponse(200, createdUser, "user registered successfully")
     )
 
 })
